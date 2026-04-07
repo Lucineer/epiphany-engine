@@ -1,1 +1,12 @@
-{"name":"epiphany-engine","type":"cocapn-vessel","version":"1.0.0","fleet":"https://the-fleet.casey-digennaro.workers.dev","cocapn":"https://cocapn.ai"}
+{
+  "name": "epiphany-engine",
+  "type": "cocapn-vessel",
+  "version": "1.0.0",
+  "fleet": "https://the-fleet.casey-digennaro.workers.dev",
+  "cocapn": "https://cocapn.ai",
+  "capabilities": [
+    "problem-decomposition",
+    "vessel-assignment",
+    "synthesis"
+  ]
+}
