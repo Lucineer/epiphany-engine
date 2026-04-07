@@ -1,5 +1,19 @@
 interface Env { EPIPHANY_KV: KVNamespace; DEEPSEEK_API_KEY?: string; }
 
+// Emergence Bus Integration
+const BUS_URL = 'https://emergence-bus.casey-digennaro.workers.dev';
+
+async function emitEvent(type: string, source: string, data: Record<string, unknown>): Promise<void> {
+  try {
+    await fetch(BUS_URL + '/api/emit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, source, data, timestamp: Date.now() })
+    });
+  } catch (e) { /* bus is fire-and-forget */ }
+}
+
+
 const CSP = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*; frame-ancestors 'none';";
 
 function json(data: unknown, s = 200) { return new Response(JSON.stringify(data), { status: s, headers: { 'Content-Type': 'application/json', ...CSP } }); }
@@ -81,7 +95,8 @@ export default {
     if (url.pathname === '/health') return json({ status: 'ok', vessel: 'epiphany-engine' });
     if (url.pathname === '/vessel.json') return json({ name: 'epiphany-engine', type: 'cocapn-vessel', version: '1.0.0', description: 'Swarm problem-solving — decompose, assign, synthesize fleet breakthroughs', fleet: 'https://the-fleet.casey-digennaro.workers.dev', capabilities: ['problem-decomposition', 'vessel-assignment', 'solution-synthesis'] });
 
-    if (url.pathname === '/api/problems') return json((await env.EPIPHANY_KV.get('problems', 'json') as Problem[] || []).slice(0, 10));
+    if (url.pathname === '/api/problems')     await emitEvent('goal.submitted', 'epiphany-engine', { path: '/api/problems', timestamp: Date.now() });
+return json((await env.EPIPHANY_KV.get('problems', 'json') as Problem[] || []).slice(0, 10));
 
     if (url.pathname === '/api/problem' && req.method === 'POST') {
       const { description } = await req.json() as { description: string };
@@ -113,7 +128,8 @@ export default {
       const { problemId, subproblemId, solution, confidence, vessel } = await req.json() as { problemId: string; subproblemId: string; solution: string; confidence: number; vessel: string };
       const problems = await env.EPIPHANY_KV.get('problems', 'json') as Problem[] || [];
       const problem = problems.find((p: Problem) => p.id === problemId);
-      if (!problem) return json({ error: 'not found' }, 404);
+      if (!problem)     await emitEvent('goal.decomposed', 'epiphany-engine', { path: '/api/solution', timestamp: Date.now() });
+return json({ error: 'not found' }, 404);
       problem.solutions.push({ subproblemId, solution: solution.substring(0, 1000), confidence: confidence || 0.5, vessel: vessel || 'unknown' });
 
       // Auto-synthesize when all sub-problems have solutions
